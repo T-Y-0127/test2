@@ -645,16 +645,17 @@ const STATIONS = [
 // ======================================================
 function startApp() {
   if (typeof L === 'undefined') {
-    setTimeout(startApp, 100);
+    // まだLeafletが読み込まれていない場合は待つ
+    setTimeout(startApp, 200);
     return;
   }
   if (map) return; // 二重初期化防止
-  initMap();                        // まず地図を表示
-  setStatus('気象データ取得中...'); // ステータス表示
-  setTimeout(() => {                // 地図レンダリング完了を待ってからAPI呼び出し
+  initMap();       // 地図を初期化
+  // 地図のサイズ確定後にAPIを呼ぶ
+  setTimeout(() => {
     fetchWeather();
     if (useSupabase) loadPhotoPins();
-  }, 300);
+  }, 500);
 }
 
 // ======================================================
@@ -694,6 +695,9 @@ function initMap() {
   map.on('zoomend moveend', () => {
     if (overlayVisible) drawOverlay();
   });
+
+  // レイアウト確定後にLeafletのサイズを強制再計算
+  setTimeout(() => { map.invalidateSize(); }, 100);
 }
 
 // ======================================================
@@ -1339,8 +1343,8 @@ document.getElementById('modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
-// DOM 構築完了後にアプリ起動
-document.addEventListener('DOMContentLoaded', function() {
+// 全リソース読み込み完了後にアプリ起動（mapのサイズ確定を保証）
+window.addEventListener('load', function() {
   startApp();
 });
 
