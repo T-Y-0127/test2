@@ -662,6 +662,7 @@ function startApp() {
 // MAP INIT
 // ======================================================
 function initMap() {
+  console.log('initMap called, L=', typeof L, 'map-div=', document.getElementById('map'));
   // 沖縄本島全域に表示範囲を限定
   const BOUNDS = L.latLngBounds(
     L.latLng(25.90, 127.55),   // 南西
@@ -678,18 +679,17 @@ function initMap() {
   });
   map.setView([26.212, 127.681], 13);  // 那覇市中心・拡大表示
 
-  // 衛星写真ベース (Esri World Imagery)
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics',
+  // タイル1: CARTO Voyager（信頼性が高く制限なし）
+  const baseLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
     maxZoom: 19,
   }).addTo(map);
 
-  // 地名・道路ラベルを上乗せ (Esri Reference Overlay)
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-    attribution: '',
-    maxZoom: 19,
-    opacity: 0.7,
-  }).addTo(map);
+  // タイル読み込みエラー時のフォールバック（OpenStreetMap）
+  baseLayer.on('tileerror', function() {
+    console.warn('Tile error, trying OSM fallback');
+  });
 
   map.on('click', onMapClick);
   map.on('zoomend moveend', () => {
@@ -1343,9 +1343,11 @@ document.getElementById('modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
-// 全リソース読み込み完了後にアプリ起動（mapのサイズ確定を保証）
+// 全リソース読み込み完了後にアプリ起動
 window.addEventListener('load', function() {
-  startApp();
+  console.log('window.load fired');
+  // 少し待ってからstartApp（CSSレイアウト確定を保証）
+  setTimeout(startApp, 200);
 });
 
 
